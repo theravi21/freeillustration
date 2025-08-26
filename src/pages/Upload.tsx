@@ -63,8 +63,8 @@ const Upload = () => {
       return { isValid: false, error: 'File size must be less than 50MB' };
     }
 
-    // For PNG files, check dimensions
-    if (file.type === 'image/png') {
+    // For image files, check dimensions using Image element
+    if (file.type === 'image/png' || file.type === 'image/svg+xml') {
       try {
         const dimensions = await getImageDimensions(file);
         const longEdge = Math.max(dimensions.width, dimensions.height);
@@ -72,7 +72,7 @@ const Upload = () => {
         if (longEdge < 2000) {
           return { 
             isValid: false, 
-            error: 'PNG files must have a minimum long edge of 2000 pixels',
+            error: `Image must have a minimum long edge of 2000 pixels (current: ${longEdge}px)`,
             width: dimensions.width,
             height: dimensions.height
           };
@@ -94,11 +94,19 @@ const Upload = () => {
   const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
     return new Promise((resolve, reject) => {
       const img = document.createElement('img');
+      const objectUrl = URL.createObjectURL(file);
+      
       img.onload = () => {
+        URL.revokeObjectURL(objectUrl); // Release memory
         resolve({ width: img.naturalWidth, height: img.naturalHeight });
       };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(file);
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl); // Release memory even on error
+        reject(new Error('Failed to load image'));
+      };
+      
+      img.src = objectUrl;
     });
   };
 
