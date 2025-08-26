@@ -1,11 +1,84 @@
 // Update this page (the content is just a fallback if you fail to update the page)
 
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import { Upload, Search, Image } from 'lucide-react';
+
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-12">
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <h1 className="text-6xl font-bold mb-6">
+            Free <span className="text-primary">Illustrations</span>
+          </h1>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Discover thousands of high-quality, free illustrations for your projects. 
+            Upload, browse, and download beautiful artwork from our creative community.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild size="lg" className="text-lg px-8">
+              <Link to="/browse">
+                <Search className="mr-2 h-5 w-5" />
+                Browse Illustrations
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="text-lg px-8">
+              <Link to="/upload">
+                <Upload className="mr-2 h-5 w-5" />
+                Upload Your Art
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Image className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">High Quality</h3>
+            <p className="text-muted-foreground">
+              All illustrations are carefully curated and optimized for various use cases.
+            </p>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Easy Search</h3>
+            <p className="text-muted-foreground">
+              Find exactly what you need with powerful search and filtering options.
+            </p>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Upload className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Free Upload</h3>
+            <p className="text-muted-foreground">
+              Share your creativity with the world and help build our community library.
+            </p>
+          </div>
+        </div>
+
+        {/* Auth CTA */}
+        <div className="text-center bg-muted/50 rounded-lg p-8">
+          <h2 className="text-2xl font-bold mb-4">Ready to get started?</h2>
+          <p className="text-muted-foreground mb-6">
+            Create an account to upload illustrations and access premium features.
+          </p>
+          <Button asChild size="lg">
+            <Link to="/auth">
+              Get Started Free
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );

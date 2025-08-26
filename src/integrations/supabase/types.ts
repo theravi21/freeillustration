@@ -28,9 +28,14 @@ export type Database = {
           file_size: number | null
           id: string
           orientation: string | null
+          original_file_size: number | null
+          original_filename: string | null
           png_large_path: string | null
           png_medium_path: string | null
           png_small_path: string | null
+          processing_error: string | null
+          processing_status: string | null
+          raw_file_path: string | null
           status: string
           style: string | null
           svg_path: string | null
@@ -53,9 +58,14 @@ export type Database = {
           file_size?: number | null
           id?: string
           orientation?: string | null
+          original_file_size?: number | null
+          original_filename?: string | null
           png_large_path?: string | null
           png_medium_path?: string | null
           png_small_path?: string | null
+          processing_error?: string | null
+          processing_status?: string | null
+          raw_file_path?: string | null
           status?: string
           style?: string | null
           svg_path?: string | null
@@ -78,9 +88,14 @@ export type Database = {
           file_size?: number | null
           id?: string
           orientation?: string | null
+          original_file_size?: number | null
+          original_filename?: string | null
           png_large_path?: string | null
           png_medium_path?: string | null
           png_small_path?: string | null
+          processing_error?: string | null
+          processing_status?: string | null
+          raw_file_path?: string | null
           status?: string
           style?: string | null
           svg_path?: string | null
