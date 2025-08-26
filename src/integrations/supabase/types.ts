@@ -14,7 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      illustrations: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          creator_id: string | null
+          description: string | null
+          dimensions_height: number | null
+          dimensions_width: number | null
+          dominant_color: string | null
+          download_count: number | null
+          file_path: string
+          file_size: number | null
+          id: string
+          orientation: string | null
+          png_large_path: string | null
+          png_medium_path: string | null
+          png_small_path: string | null
+          status: string
+          style: string | null
+          svg_path: string | null
+          tags: string[] | null
+          thumbnail_path: string | null
+          title: string
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          creator_id?: string | null
+          description?: string | null
+          dimensions_height?: number | null
+          dimensions_width?: number | null
+          dominant_color?: string | null
+          download_count?: number | null
+          file_path: string
+          file_size?: number | null
+          id?: string
+          orientation?: string | null
+          png_large_path?: string | null
+          png_medium_path?: string | null
+          png_small_path?: string | null
+          status?: string
+          style?: string | null
+          svg_path?: string | null
+          tags?: string[] | null
+          thumbnail_path?: string | null
+          title: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          creator_id?: string | null
+          description?: string | null
+          dimensions_height?: number | null
+          dimensions_width?: number | null
+          dominant_color?: string | null
+          download_count?: number | null
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          orientation?: string | null
+          png_large_path?: string | null
+          png_medium_path?: string | null
+          png_small_path?: string | null
+          status?: string
+          style?: string | null
+          svg_path?: string | null
+          tags?: string[] | null
+          thumbnail_path?: string | null
+          title?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      Inventory: {
+        Row: {
+          "Category/Tags": string | null
+          "Content Owner": string | null
+          "Content Type (blog, product, landing, docs, etc.": string | null
+          "Content Type (blog, product, landing, docs, etc.)": string | null
+          "Internal Links (key in/out links)": string | null
+          "Last Updated": string | null
+          "Linked Assets (images, PDFs, videos)": string | null
+          "Meta Description": string | null
+          "Meta Title": string | null
+          "Notes/Comments": string | null
+          "Page Title": string
+          "Performance: Avg engagement time or Time on page": number | null
+          "Performance: Conversions/Conversion rate": number | null
+          "Performance: Pageviews (GA4)": number | null
+          "Publish Date": string | null
+          "SEO: Clicks and CTR": number | null
+          "SEO: Impressions": number | null
+          "Status (Not started, Draft, Pending approval, Approved/Publishe":
+            | string
+            | null
+          URL: number
+        }
+        Insert: {
+          "Category/Tags"?: string | null
+          "Content Owner"?: string | null
+          "Content Type (blog, product, landing, docs, etc."?: string | null
+          "Content Type (blog, product, landing, docs, etc.)"?: string | null
+          "Internal Links (key in/out links)"?: string | null
+          "Last Updated"?: string | null
+          "Linked Assets (images, PDFs, videos)"?: string | null
+          "Meta Description"?: string | null
+          "Meta Title"?: string | null
+          "Notes/Comments"?: string | null
+          "Page Title": string
+          "Performance: Avg engagement time or Time on page"?: number | null
+          "Performance: Conversions/Conversion rate"?: number | null
+          "Performance: Pageviews (GA4)"?: number | null
+          "Publish Date"?: string | null
+          "SEO: Clicks and CTR"?: number | null
+          "SEO: Impressions"?: number | null
+          "Status (Not started, Draft, Pending approval, Approved/Publishe"?:
+            | string
+            | null
+          URL?: number
+        }
+        Update: {
+          "Category/Tags"?: string | null
+          "Content Owner"?: string | null
+          "Content Type (blog, product, landing, docs, etc."?: string | null
+          "Content Type (blog, product, landing, docs, etc.)"?: string | null
+          "Internal Links (key in/out links)"?: string | null
+          "Last Updated"?: string | null
+          "Linked Assets (images, PDFs, videos)"?: string | null
+          "Meta Description"?: string | null
+          "Meta Title"?: string | null
+          "Notes/Comments"?: string | null
+          "Page Title"?: string
+          "Performance: Avg engagement time or Time on page"?: number | null
+          "Performance: Conversions/Conversion rate"?: number | null
+          "Performance: Pageviews (GA4)"?: number | null
+          "Publish Date"?: string | null
+          "SEO: Clicks and CTR"?: number | null
+          "SEO: Impressions"?: number | null
+          "Status (Not started, Draft, Pending approval, Approved/Publishe"?:
+            | string
+            | null
+          URL?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
