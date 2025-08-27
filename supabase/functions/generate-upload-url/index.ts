@@ -32,6 +32,14 @@ serve(async (req) => {
 
     const { filename, contentType, fileSize } = await req.json();
 
+    // Validate filename is provided
+    if (!filename) {
+      return new Response(
+        JSON.stringify({ error: 'Filename is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Validate Content-Type is provided and matches expected types
     const allowedTypes = ['image/svg+xml', 'image/png'];
     if (!contentType || !allowedTypes.includes(contentType)) {
@@ -51,15 +59,14 @@ serve(async (req) => {
       );
     }
 
-    // Generate unique file path
-    const fileExtension = filename.split('.').pop();
-    const uniqueFilename = `${crypto.randomUUID()}.${fileExtension}`;
-    const filePath = `${user.id}/${uniqueFilename}`;
+    // Generate deterministic object key
+    const uuid = crypto.randomUUID();
+    const key = `illustrations/${user.id}/${uuid}/${filename}`;
 
     // Generate presigned URL for upload
     const { data: signedUrlData, error: urlError } = await supabaseClient.storage
       .from('illustrations-raw')
-      .createSignedUploadUrl(filePath, {
+      .createSignedUploadUrl(key, {
         upsert: false,
       });
 
@@ -73,7 +80,7 @@ serve(async (req) => {
 
     // Log upload attempt
     console.log('Generated upload URL:', {
-      filePath,
+      key,
       contentType,
       fileSize,
       userId: user.id,
@@ -82,10 +89,9 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        uploadUrl: signedUrlData.signedUrl,
-        path: filePath,
-        token: signedUrlData.token,
-        contentType, // Return the validated Content-Type
+        key,
+        url: signedUrlData.signedUrl,
+        contentType,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
