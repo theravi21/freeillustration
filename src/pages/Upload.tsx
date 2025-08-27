@@ -27,6 +27,7 @@ const Upload = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'failed'>('idle');
   
   // Form data
   const [title, setTitle] = useState('');
@@ -209,6 +210,8 @@ const Upload = () => {
       xhr.addEventListener('load', async () => {
         if (xhr.status === 200) {
           try {
+            console.log('File uploaded successfully, key:', urlData.path, 'size:', file.size, 'type:', file.type);
+            
             // Process the illustration
             const { data: processData, error: processError } = await supabase.functions.invoke(
               'process-illustration',
@@ -230,15 +233,70 @@ const Upload = () => {
             );
 
             if (processError || !processData?.success) {
-              throw new Error(processData?.error || 'Failed to process illustration');
+              throw new Error(processData?.error || 'Failed to start processing');
             }
 
+            const illustrationId = processData.illustrationId;
+            console.log('Processing started for illustration:', illustrationId);
+
+            // Start polling for processing completion
+            const pollProcessing = async () => {
+              try {
+                const { data: illustration, error } = await supabase
+                  .from('illustrations')
+                  .select('processing_status, processing_error')
+                  .eq('id', illustrationId)
+                  .single();
+
+                if (error) {
+                  console.error('Error polling status:', error);
+                  return;
+                }
+
+                console.log('Processing status:', illustration.processing_status);
+
+                if (illustration.processing_status === 'completed') {
+                  setProcessingStatus('completed');
+                  toast.success('Illustration uploaded and processed successfully! It will be reviewed before being published.');
+                  
+                  // Reset form after successful completion
+                  setTimeout(() => {
+                    setFile(null);
+                    setFileValidation({ isValid: false });
+                    setTitle('');
+                    setDescription('');
+                    setTags([]);
+                    setTopic('');
+                    setStyle('');
+                    setProcessingStatus('idle');
+                    navigate('/dashboard');
+                  }, 2000);
+                  
+                } else if (illustration.processing_status === 'failed') {
+                  setProcessingStatus('failed');
+                  const errorMessage = illustration.processing_error || 'Processing failed for unknown reason';
+                  toast.error(`Processing failed: ${errorMessage}`);
+                } else if (illustration.processing_status === 'processing') {
+                  // Continue polling
+                  setTimeout(pollProcessing, 2000);
+                }
+              } catch (pollError) {
+                console.error('Error during polling:', pollError);
+                setProcessingStatus('failed');
+                toast.error('Failed to check processing status');
+              }
+            };
+
+            // Start polling after a short delay
+            setTimeout(pollProcessing, 1000);
+            
             resolve();
           } catch (error) {
             reject(error);
           }
         } else {
-          reject(new Error(`Upload failed with status ${xhr.status}`));
+          const errorText = await xhr.responseText || 'Unknown error';
+          reject(new Error(`Upload failed with status ${xhr.status}: ${errorText}`));
         }
       });
 
@@ -247,7 +305,7 @@ const Upload = () => {
       });
 
       xhr.open('PUT', urlData.uploadUrl);
-      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.setRequestHeader('Content-Type', urlData.contentType || file.type); // Use validated Content-Type
       xhr.send(file);
     });
   };
@@ -267,13 +325,19 @@ const Upload = () => {
 
     setIsUploading(true);
     setUploadProgress(0);
+    setProcessingStatus('uploading');
 
     try {
       await uploadFile();
-      toast.success('Illustration uploaded successfully! It will be reviewed before being published.');
-      navigate('/dashboard');
+      
+      // Don't navigate immediately - wait for processing to complete
+      setProcessingStatus('processing');
+      
+      // The polling logic is now handled in uploadFile function
+      
     } catch (error) {
       console.error('Upload error:', error);
+      setProcessingStatus('failed');
       toast.error(error instanceof Error ? error.message : 'Upload failed');
     } finally {
       setIsUploading(false);
@@ -508,12 +572,28 @@ const Upload = () => {
 
             <Button
               type="submit"
-              disabled={!file || !fileValidation.isValid || !title.trim() || isUploading}
+              disabled={!file || !fileValidation.isValid || !title.trim() || isUploading || processingStatus !== 'idle'}
               className="min-w-32"
             >
-              {isUploading ? 'Uploading...' : 'Upload Illustration'}
+              {processingStatus === 'uploading' && 'Uploading...'}
+              {processingStatus === 'processing' && 'Processing...'}
+              {processingStatus === 'completed' && 'Completed ✓'}
+              {processingStatus === 'failed' && 'Failed - Try Again'}
+              {processingStatus === 'idle' && 'Upload Illustration'}
             </Button>
           </div>
+          
+          {processingStatus === 'processing' && (
+            <div className="text-center text-sm text-muted-foreground mt-4">
+              Your illustration is being processed. This may take a few moments...
+            </div>
+          )}
+          
+          {processingStatus === 'completed' && (
+            <div className="text-center text-sm text-green-600 mt-4">
+              Processing complete! Your illustration is ready for review.
+            </div>
+          )}
         </form>
       </div>
     </div>

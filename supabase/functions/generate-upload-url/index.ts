@@ -32,11 +32,12 @@ serve(async (req) => {
 
     const { filename, contentType, fileSize } = await req.json();
 
-    // Validate file type
+    // Validate Content-Type is provided and matches expected types
     const allowedTypes = ['image/svg+xml', 'image/png'];
-    if (!allowedTypes.includes(contentType)) {
+    if (!contentType || !allowedTypes.includes(contentType)) {
+      console.error('Invalid or missing Content-Type:', contentType);
       return new Response(
-        JSON.stringify({ error: 'Invalid file type. Only SVG and PNG files are allowed.' }),
+        JSON.stringify({ error: 'Content-Type must be image/png or image/svg+xml' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -70,11 +71,21 @@ serve(async (req) => {
       );
     }
 
+    // Log upload attempt
+    console.log('Generated upload URL:', {
+      filePath,
+      contentType,
+      fileSize,
+      userId: user.id,
+      filename
+    });
+
     return new Response(
       JSON.stringify({
         uploadUrl: signedUrlData.signedUrl,
         path: filePath,
         token: signedUrlData.token,
+        contentType, // Return the validated Content-Type
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
