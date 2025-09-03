@@ -18,6 +18,9 @@ interface Illustration {
   png_small_path?: string;
   download_count: number;
   created_at: string;
+  updated_at: string;
+  viewUrl?: string;
+  raw_file_path?: string;
 }
 
 interface IllustrationGridProps {
@@ -56,18 +59,30 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
             <div className="relative aspect-square">
               {/* Illustration Image */}
               <div className="w-full h-full bg-muted rounded-t-lg flex items-center justify-center">
-                {illustration.thumbnail_path ? (
-                  <img
-                    src={illustration.thumbnail_path}
-                    alt={illustration.title}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="text-muted-foreground text-xs text-center p-4">
-                    {illustration.title}
-                  </div>
-                )}
+                {(() => {
+                  // Determine the best image URL to use with cache busting
+                  let imageUrl = illustration.thumbnail_path || illustration.viewUrl || illustration.raw_file_path;
+                  
+                  // Add cache busting parameter using updated_at timestamp
+                  if (imageUrl && illustration.updated_at) {
+                    const separator = imageUrl.includes('?') ? '&' : '?';
+                    const timestamp = new Date(illustration.updated_at).getTime();
+                    imageUrl = `${imageUrl}${separator}v=${timestamp}`;
+                  }
+                  
+                  return imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={illustration.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="text-muted-foreground text-xs text-center p-4">
+                      {illustration.title}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Hover Overlay */}

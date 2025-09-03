@@ -102,17 +102,26 @@ serve(async (req) => {
       );
     }
 
+    // Generate viewUrl for immediate display
+    const { data: { publicUrl } } = supabaseClient.storage
+      .from('illustrations-raw')
+      .getPublicUrl(file_path);
+
     console.log('Illustration created successfully:', {
       id: illustration.id,
       file_path,
       title,
-      creator_id: user.id
+      creator_id: user.id,
+      viewUrl: publicUrl
     });
 
     return new Response(
       JSON.stringify({
         success: true,
-        illustration
+        illustration: {
+          ...illustration,
+          viewUrl: publicUrl
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

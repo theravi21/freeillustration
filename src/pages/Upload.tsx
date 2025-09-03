@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,16 @@ const Upload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'failed'>('idle');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
   
   // Form data
   const [title, setTitle] = useState('');
@@ -117,6 +127,14 @@ const Upload = () => {
     
     if (validation.isValid) {
       setFile(selectedFile);
+      
+      // Create optimistic preview URL
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      const newPreviewUrl = URL.createObjectURL(selectedFile);
+      setPreviewUrl(newPreviewUrl);
+      
       // Auto-fill title from filename if empty
       if (!title) {
         const nameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, '');
@@ -241,6 +259,12 @@ const Upload = () => {
             
             // Reset form after successful completion
             setTimeout(() => {
+              // Clean up preview URL
+              if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                setPreviewUrl(null);
+              }
+              
               setFile(null);
               setFileValidation({ isValid: false });
               setTitle('');
@@ -267,7 +291,17 @@ const Upload = () => {
       });
 
       xhr.open('PUT', urlData.url);
-      xhr.setRequestHeader('Content-Type', urlData.contentType || file.type); // Use validated Content-Type
+      
+      // Set Content-Type header to match what was used to generate the presigned URL
+      xhr.setRequestHeader('Content-Type', urlData.contentType || file.type);
+      
+      // Add any additional headers that were included in the presigned URL
+      if (urlData.headers) {
+        Object.entries(urlData.headers).forEach(([key, value]) => {
+          xhr.setRequestHeader(key, value as string);
+        });
+      }
+      
       xhr.send(file);
     });
   };
@@ -359,29 +393,40 @@ const Upload = () => {
                       Select File
                     </Button>
                   </>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-center gap-3">
-                      {file.type === 'image/svg+xml' ? (
-                        <FileText className="h-8 w-8 text-blue-500" />
-                      ) : (
-                        <Image className="h-8 w-8 text-green-500" />
-                      )}
-                      <div className="text-left">
-                        <p className="font-medium">{file.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
-                          {fileValidation.width && fileValidation.height && (
-                            ` • ${fileValidation.width}×${fileValidation.height}px`
-                          )}
-                        </p>
-                      </div>
-                      {fileValidation.isValid ? (
-                        <Check className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <AlertCircle className="h-5 w-5 text-destructive" />
-                      )}
-                    </div>
+                 ) : (
+                   <div className="space-y-4">
+                     {/* Preview Image */}
+                     {previewUrl && (
+                       <div className="w-full max-w-xs mx-auto">
+                         <img
+                           src={previewUrl}
+                           alt="Preview"
+                           className="w-full aspect-square object-cover rounded-lg border"
+                         />
+                       </div>
+                     )}
+                     
+                     <div className="flex items-center justify-center gap-3">
+                       {file.type === 'image/svg+xml' ? (
+                         <FileText className="h-8 w-8 text-blue-500" />
+                       ) : (
+                         <Image className="h-8 w-8 text-green-500" />
+                       )}
+                       <div className="text-left">
+                         <p className="font-medium">{file.name}</p>
+                         <p className="text-sm text-muted-foreground">
+                           {(file.size / 1024 / 1024).toFixed(2)} MB
+                           {fileValidation.width && fileValidation.height && (
+                             ` • ${fileValidation.width}×${fileValidation.height}px`
+                           )}
+                         </p>
+                       </div>
+                       {fileValidation.isValid ? (
+                         <Check className="h-5 w-5 text-green-500" />
+                       ) : (
+                         <AlertCircle className="h-5 w-5 text-destructive" />
+                       )}
+                     </div>
 
                     {!fileValidation.isValid && (
                       <div className="text-destructive text-sm">
@@ -394,6 +439,10 @@ const Upload = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
+                        if (previewUrl) {
+                          URL.revokeObjectURL(previewUrl);
+                          setPreviewUrl(null);
+                        }
                         setFile(null);
                         setFileValidation({ isValid: false });
                       }}
