@@ -210,21 +210,18 @@ const Upload = () => {
       xhr.addEventListener('load', async () => {
         if (xhr.status === 200) {
           try {
-            console.log('File uploaded successfully, key:', urlData.path, 'size:', file.size, 'type:', file.type);
+            console.log('File uploaded successfully, key:', urlData.key, 'size:', file.size, 'type:', file.type);
             
-            // Process the illustration
-            const { data: processData, error: processError } = await supabase.functions.invoke(
-              'process-illustration',
+            // Create illustration record after successful upload
+            const { data: createData, error: createError } = await supabase.functions.invoke(
+              'create-illustration',
               {
                 body: {
-                  filePath: urlData.path,
-                  originalFilename: file.name,
-                  fileSize: file.size,
                   title,
                   description,
                   tags,
-                  topic,
-                  style,
+                  file_path: urlData.key,
+                  contentType: file.type,
                 },
                 headers: {
                   Authorization: `Bearer ${session.access_token}`,
@@ -232,63 +229,28 @@ const Upload = () => {
               }
             );
 
-            if (processError || !processData?.success) {
-              throw new Error(processData?.error || 'Failed to start processing');
+            if (createError || !createData?.success) {
+              throw new Error(createData?.error || 'Failed to create illustration record');
             }
 
-            const illustrationId = processData.illustrationId;
-            console.log('Processing started for illustration:', illustrationId);
+            const illustration = createData.illustration;
+            console.log('Illustration record created:', illustration.id);
 
-            // Start polling for processing completion
-            const pollProcessing = async () => {
-              try {
-                const { data: illustration, error } = await supabase
-                  .from('illustrations')
-                  .select('processing_status, processing_error')
-                  .eq('id', illustrationId)
-                  .single();
-
-                if (error) {
-                  console.error('Error polling status:', error);
-                  return;
-                }
-
-                console.log('Processing status:', illustration.processing_status);
-
-                if (illustration.processing_status === 'completed') {
-                  setProcessingStatus('completed');
-                  toast.success('Illustration uploaded and processed successfully! It will be reviewed before being published.');
-                  
-                  // Reset form after successful completion
-                  setTimeout(() => {
-                    setFile(null);
-                    setFileValidation({ isValid: false });
-                    setTitle('');
-                    setDescription('');
-                    setTags([]);
-                    setTopic('');
-                    setStyle('');
-                    setProcessingStatus('idle');
-                    navigate('/dashboard');
-                  }, 2000);
-                  
-                } else if (illustration.processing_status === 'failed') {
-                  setProcessingStatus('failed');
-                  const errorMessage = illustration.processing_error || 'Processing failed for unknown reason';
-                  toast.error(`Processing failed: ${errorMessage}`);
-                } else if (illustration.processing_status === 'processing') {
-                  // Continue polling
-                  setTimeout(pollProcessing, 2000);
-                }
-              } catch (pollError) {
-                console.error('Error during polling:', pollError);
-                setProcessingStatus('failed');
-                toast.error('Failed to check processing status');
-              }
-            };
-
-            // Start polling after a short delay
-            setTimeout(pollProcessing, 1000);
+            setProcessingStatus('completed');
+            toast.success('Illustration uploaded successfully! It will be reviewed before being published.');
+            
+            // Reset form after successful completion
+            setTimeout(() => {
+              setFile(null);
+              setFileValidation({ isValid: false });
+              setTitle('');
+              setDescription('');
+              setTags([]);
+              setTopic('');
+              setStyle('');
+              setProcessingStatus('idle');
+              navigate('/browse');
+            }, 2000);
             
             resolve();
           } catch (error) {
@@ -304,7 +266,7 @@ const Upload = () => {
         reject(new Error('Upload failed'));
       });
 
-      xhr.open('PUT', urlData.uploadUrl);
+      xhr.open('PUT', urlData.url);
       xhr.setRequestHeader('Content-Type', urlData.contentType || file.type); // Use validated Content-Type
       xhr.send(file);
     });
@@ -330,10 +292,7 @@ const Upload = () => {
     try {
       await uploadFile();
       
-      // Don't navigate immediately - wait for processing to complete
-      setProcessingStatus('processing');
-      
-      // The polling logic is now handled in uploadFile function
+      // Upload and creation completed successfully
       
     } catch (error) {
       console.error('Upload error:', error);
