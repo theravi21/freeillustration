@@ -102,17 +102,20 @@ serve(async (req) => {
       );
     }
 
-    // Generate viewUrl for immediate display
+    // Generate viewUrl for immediate display with cache-buster
     const { data: { publicUrl } } = supabaseClient.storage
       .from('illustrations-raw')
       .getPublicUrl(file_path);
+    
+    // Add cache-buster using updated_at timestamp for instant feed updates
+    const cacheBustedUrl = `${publicUrl}?v=${new Date(illustration.updated_at).getTime()}`;
 
     console.log('Illustration created successfully:', {
       id: illustration.id,
       file_path,
       title,
       creator_id: user.id,
-      viewUrl: publicUrl
+      viewUrl: cacheBustedUrl
     });
 
     return new Response(
@@ -120,7 +123,7 @@ serve(async (req) => {
         success: true,
         illustration: {
           ...illustration,
-          viewUrl: publicUrl
+          viewUrl: cacheBustedUrl
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
