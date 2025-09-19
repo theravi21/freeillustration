@@ -248,7 +248,9 @@ const Upload = () => {
             );
 
             if (createError || !createData?.success) {
-              throw new Error(createData?.error || 'Failed to create illustration record');
+              const errorMessage = createData?.details || createData?.error || createError?.message || 'Failed to create illustration record';
+              console.error('Error creating illustration:', { createError, createData });
+              throw new Error(errorMessage);
             }
 
             const illustration = createData.illustration;

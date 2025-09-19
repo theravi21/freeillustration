@@ -44,19 +44,17 @@ serve(async (req) => {
       );
     }
 
-    // HEAD check to confirm the object exists and has expected Content-Type
+    // Verify file exists using list operation (works with private buckets)
     try {
-      const { data: headData, error: headError } = await supabaseClient.storage
+      const { data: listData, error: listError } = await supabaseClient.storage
         .from('illustrations-raw')
-        .download(file_path, {
-          transform: {
-            width: 1,
-            height: 1,
-          }
+        .list(file_path.substring(0, file_path.lastIndexOf('/')), {
+          limit: 1,
+          search: file_path.substring(file_path.lastIndexOf('/') + 1),
         });
 
-      if (headError) {
-        console.error('HEAD check failed for file_path:', file_path, 'Error:', headError);
+      if (listError || !listData || listData.length === 0) {
+        console.error('File verification failed for file_path:', file_path, 'Error:', listError);
         return new Response(
           JSON.stringify({ 
             error: 'File not found or inaccessible at the specified path' 
