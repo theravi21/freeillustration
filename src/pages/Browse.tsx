@@ -56,7 +56,7 @@ const Browse = () => {
     let query = supabase
       .from('illustrations')
       .select('*', { count: 'exact' })
-      .eq('status', 'approved')
+      .eq('published', true)
       .order('created_at', { ascending: false });
 
     // Apply search filter
