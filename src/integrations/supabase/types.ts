@@ -35,6 +35,7 @@ export type Database = {
           png_small_path: string | null
           processing_error: string | null
           processing_status: string | null
+          published: boolean | null
           raw_file_path: string | null
           status: string
           style: string | null
@@ -65,6 +66,7 @@ export type Database = {
           png_small_path?: string | null
           processing_error?: string | null
           processing_status?: string | null
+          published?: boolean | null
           raw_file_path?: string | null
           status?: string
           style?: string | null
@@ -95,6 +97,7 @@ export type Database = {
           png_small_path?: string | null
           processing_error?: string | null
           processing_status?: string | null
+          published?: boolean | null
           raw_file_path?: string | null
           status?: string
           style?: string | null
