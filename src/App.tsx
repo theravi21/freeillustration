@@ -7,8 +7,8 @@ import Index from "./pages/Index";
 import Browse from "./pages/Browse";
 import Upload from "./pages/Upload";
 import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
