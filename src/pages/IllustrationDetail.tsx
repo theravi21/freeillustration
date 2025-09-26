@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Download, Eye, Calendar, Palette, Tag } from 'lucide-react';
+import { ArrowLeft, Download, Eye, Calendar, Tag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -44,12 +44,21 @@ const IllustrationDetail = () => {
         .select('*')
         .eq('id', illustrationId)
         .eq('published', true)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching illustration:', error);
         toast({
           title: "Error",
+          description: "Failed to load illustration.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data) {
+        toast({
+          title: "Not Found",
           description: "Illustration not found or not published.",
           variant: "destructive",
         });
@@ -100,10 +109,14 @@ const IllustrationDetail = () => {
       URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      // Update download count
-      await supabase.rpc('increment_download_count', { 
+      // Update download count using the database function
+      const { error: updateError } = await supabase.rpc('increment_download_count', { 
         illustration_id: illustration.id 
       });
+
+      if (updateError) {
+        console.error('Failed to update download count:', updateError);
+      }
 
       toast({
         title: "Success",
@@ -216,7 +229,7 @@ const IllustrationDetail = () => {
               <Button
                 onClick={handleDownload}
                 disabled={downloading}
-                className="flex-1 bg-primary hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 transform"
+                className="flex-1 bg-primary hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 transform hover:shadow-lg hover:shadow-primary/25"
               >
                 <Download className="h-4 w-4 mr-2" />
                 {downloading ? 'Downloading...' : 'Download'}
@@ -230,7 +243,7 @@ const IllustrationDetail = () => {
                     window.open(fullscreenUrl, '_blank');
                   }
                 }}
-                className="hover:scale-105 active:scale-95 transition-all duration-200 hover:bg-accent hover:text-accent-foreground"
+                className="hover:scale-105 active:scale-95 transition-all duration-200 hover:bg-accent hover:text-accent-foreground hover:shadow-lg"
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Full View

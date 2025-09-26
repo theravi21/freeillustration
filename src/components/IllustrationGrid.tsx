@@ -33,12 +33,38 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
     e.preventDefault();
     e.stopPropagation();
     
-    // For now, we'll just log the download action
-    // In a real implementation, this would trigger the actual download
-    console.log('Downloading:', illustration.title);
-    
-    // You could also track the download
-    // await supabase.rpc('increment_download_count', { illustration_id: illustration.id });
+    if (!illustration.raw_file_path) {
+      console.error('No file path available for download');
+      return;
+    }
+
+    try {
+      // Get the file from storage
+      const { data, error } = await supabase.storage
+        .from('illustrations-processed')
+        .download(illustration.raw_file_path);
+
+      if (error) {
+        throw error;
+      }
+
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `illustration-${illustration.id}`;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // Update download count
+      await supabase.rpc('increment_download_count', { 
+        illustration_id: illustration.id 
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+    }
   };
 
   const formatDownloadCount = (count: number) => {
@@ -109,7 +135,7 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="bg-background/90 hover:bg-background text-foreground gap-1"
+                  className="bg-background/90 hover:bg-background text-foreground gap-1 hover:scale-110 active:scale-95 transition-all duration-200 transform hover:shadow-lg"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -123,11 +149,11 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1 hover:scale-110 active:scale-95 transition-all duration-200 transform hover:shadow-lg hover:shadow-primary/25"
                   onClick={(e) => handleDownload(illustration, e)}
                 >
                   <Download className="h-3 w-3" />
-                  PNG
+                  Download
                 </Button>
               </div>
 
