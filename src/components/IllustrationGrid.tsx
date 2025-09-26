@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, Eye, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Illustration {
   id: string;
@@ -60,8 +61,21 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
               {/* Illustration Image */}
               <div className="w-full h-full bg-muted rounded-t-lg flex items-center justify-center">
                 {(() => {
-                  // Determine the best image URL to use with cache busting
-                  let imageUrl = illustration.thumbnail_path || illustration.viewUrl || illustration.raw_file_path;
+                  // Create the image URL from file_path using Supabase storage
+                  let imageUrl = null;
+                  
+                  if (illustration.thumbnail_path) {
+                    // Use thumbnail if available
+                    imageUrl = supabase.storage.from('illustrations-processed').getPublicUrl(illustration.thumbnail_path).data.publicUrl;
+                  } else if (illustration.png_small_path) {
+                    // Use small PNG if available
+                    imageUrl = supabase.storage.from('illustrations-processed').getPublicUrl(illustration.png_small_path).data.publicUrl;
+                  } else if (illustration.raw_file_path) {
+                    // Use raw file path in processed bucket
+                    const fileName = illustration.raw_file_path.split('/').pop();
+                    const userFolder = illustration.raw_file_path.split('/')[1];
+                    imageUrl = supabase.storage.from('illustrations-processed').getPublicUrl(`${userFolder}/${fileName}`).data.publicUrl;
+                  }
                   
                   // Add cache busting parameter using updated_at timestamp
                   if (imageUrl && illustration.updated_at) {
@@ -76,13 +90,18 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
                       alt={illustration.title}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      onError={(e) => {
+                        // Fallback to showing just the title if image fails to load
+                        e.currentTarget.style.display = 'none';
+                        const fallback = e.currentTarget.parentElement?.querySelector('.fallback-text') as HTMLElement;
+                        if (fallback) fallback.style.display = 'block';
+                      }}
                     />
-                  ) : (
-                    <div className="text-muted-foreground text-xs text-center p-4">
-                      {illustration.title}
-                    </div>
-                  );
+                  ) : null;
                 })()}
+                <div className="fallback-text text-muted-foreground text-xs text-center p-4" style={{display: 'none'}}>
+                  {illustration.title}
+                </div>
               </div>
 
               {/* Hover Overlay */}

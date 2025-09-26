@@ -1,10 +1,36 @@
-// Update this page (the content is just a fallback if you fail to update the page)
-
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Upload, Search, Image } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import IllustrationGrid from '@/components/IllustrationGrid';
 
 const Index = () => {
+  const [recentIllustrations, setRecentIllustrations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecentIllustrations = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('illustrations')
+          .select('*')
+          .eq('published', true)
+          .order('created_at', { ascending: false })
+          .limit(6);
+
+        if (error) throw error;
+        setRecentIllustrations(data || []);
+      } catch (error) {
+        console.error('Error fetching recent illustrations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentIllustrations();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-12">
@@ -66,6 +92,26 @@ const Index = () => {
             </p>
           </div>
         </div>
+
+        {/* Recent Illustrations */}
+        {recentIllustrations.length > 0 && (
+          <div className="mb-16">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-4">Recent Uploads</h2>
+              <p className="text-muted-foreground">
+                Check out the latest illustrations from our community
+              </p>
+            </div>
+            <IllustrationGrid illustrations={recentIllustrations} />
+            <div className="text-center mt-8">
+              <Button asChild variant="outline" size="lg">
+                <Link to="/browse">
+                  View All Illustrations
+                </Link>
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Auth CTA */}
         <div className="text-center bg-muted/50 rounded-lg p-8">
