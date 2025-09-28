@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, Eye, Heart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Download, Eye } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Illustration {
@@ -22,6 +22,11 @@ interface Illustration {
   updated_at: string;
   viewUrl?: string;
   raw_file_path?: string;
+  file_path?: string;
+}
+
+interface IllustrationGridProps {
+  illustrations: Illustration[];
 }
 
 interface IllustrationGridProps {
@@ -29,6 +34,35 @@ interface IllustrationGridProps {
 }
 
 const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) => {
+  const [rawSignedUrls, setRawSignedUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // Fetch signed URLs for items lacking processed images
+    const fetchSigned = async () => {
+      const tasks = illustrations
+        .filter((i) => !i.thumbnail_path && !i.png_small_path && !i.raw_file_path && i.file_path)
+        .map(async (i) => {
+          try {
+            const { data, error } = await supabase.functions.invoke('get-raw-image-url', {
+              body: { file_path: i.file_path },
+            });
+            if (!error && data?.url) {
+              return { id: i.id, url: data.url as string };
+            }
+          } catch (e) {
+            console.warn('Signed URL fetch failed for', i.id, e);
+          }
+          return null;
+        });
+
+      const results = await Promise.all(tasks);
+      const map: Record<string, string> = {};
+      results.forEach((r) => { if (r) map[r.id] = r.url; });
+      if (Object.keys(map).length) setRawSignedUrls((prev) => ({ ...prev, ...map }));
+    };
+
+    if (illustrations?.length) fetchSigned();
+  }, [illustrations]);
   const handleDownload = async (illustration: Illustration, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -101,6 +135,9 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
                     const fileName = illustration.raw_file_path.split('/').pop();
                     const userFolder = illustration.raw_file_path.split('/')[1];
                     imageUrl = supabase.storage.from('illustrations-processed').getPublicUrl(`${userFolder}/${fileName}`).data.publicUrl;
+                  } else if (rawSignedUrls[illustration.id]) {
+                    // Fallback to a short-lived signed URL from the raw bucket
+                    imageUrl = rawSignedUrls[illustration.id];
                   }
                   
                   // Add cache busting parameter using updated_at timestamp
@@ -133,18 +170,15 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
               {/* Hover Overlay */}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
                 <Button
+                  asChild
                   variant="secondary"
                   size="sm"
                   className="bg-background/90 hover:bg-background text-foreground gap-1 hover:scale-110 active:scale-95 transition-all duration-200 transform hover:shadow-lg"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // Navigate to detail page
-                    window.location.href = `/illustration/${illustration.id}`;
-                  }}
                 >
-                  <Eye className="h-3 w-3" />
-                  View
+                  <Link to={`/illustration/${illustration.id}`}>
+                    <Eye className="h-3 w-3" />
+                    View
+                  </Link>
                 </Button>
                 <Button
                   variant="secondary"
