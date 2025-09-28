@@ -159,18 +159,20 @@ async function processIllustrationBackground(
     // Determine user-friendly error message
     let userMessage = 'Processing failed due to an unexpected error.';
     
-    if (error.message.includes('Unsupported file format') || error.message.includes('Invalid')) {
-      userMessage = 'File format not supported or file is invalid. Please upload PNG or SVG files only.';
-    } else if (error.message.includes('corrupt') || error.message.includes('invalid')) {
-      userMessage = 'File appears to be corrupted or invalid. Please try uploading a different file.';
-    } else if (error.message.includes('memory') || error.message.includes('size') || error.message.includes('large')) {
-      userMessage = 'File is too large to process. Please reduce file size and try again.';
-    } else if (error.message.includes('external') || error.message.includes('reference')) {
-      userMessage = 'SVG contains external references which are not allowed for security reasons.';
-    } else if (error.message.includes('download') || error.message.includes('storage')) {
-      userMessage = 'Failed to access uploaded file. Please try uploading again.';
-    } else if (error.message.includes('dimensions') || error.message.includes('2000')) {
-      userMessage = 'Image does not meet minimum size requirements (2000px minimum long edge).';
+    if (error instanceof Error) {
+      if (error.message.includes('Unsupported file format') || error.message.includes('Invalid')) {
+        userMessage = 'File format not supported or file is invalid. Please upload PNG or SVG files only.';
+      } else if (error.message.includes('corrupt') || error.message.includes('invalid')) {
+        userMessage = 'File appears to be corrupted or invalid. Please try uploading a different file.';
+      } else if (error.message.includes('memory') || error.message.includes('size') || error.message.includes('large')) {
+        userMessage = 'File is too large to process. Please reduce file size and try again.';
+      } else if (error.message.includes('external') || error.message.includes('reference')) {
+        userMessage = 'SVG contains external references which are not allowed for security reasons.';
+      } else if (error.message.includes('download') || error.message.includes('storage')) {
+        userMessage = 'Failed to access uploaded file. Please try uploading again.';
+      } else if (error.message.includes('dimensions') || error.message.includes('2000')) {
+        userMessage = 'Image does not meet minimum size requirements (2000px minimum long edge).';
+      }
     }
     
     // Update with error status and user-friendly message
