@@ -3,9 +3,11 @@ import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Download, Eye, Calendar, Tag } from 'lucide-react';
+import { ArrowLeft, Download, Eye, Calendar, Tag, ZoomIn } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import ImageViewer from '@/components/ImageViewer';
+import DownloadModal from '@/components/DownloadModal';
 
 interface Illustration {
   id: string;
@@ -29,7 +31,8 @@ const IllustrationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [illustration, setIllustration] = useState<Illustration | null>(null);
   const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -78,60 +81,17 @@ const IllustrationDetail = () => {
     }
   };
 
-  const handleDownload = async () => {
-    if (!illustration?.raw_file_path) {
-      toast({
-        title: "Error",
-        description: "File not available for download.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const getOriginalFormat = (): 'svg' | 'png' => {
+    if (!illustration?.original_filename) return 'png';
+    return illustration.original_filename.toLowerCase().endsWith('.svg') ? 'svg' : 'png';
+  };
 
-    setDownloading(true);
-    try {
-      // Get the file from storage
-      const { data, error } = await supabase.storage
-        .from('illustrations-processed')
-        .download(illustration.raw_file_path);
+  const handleViewImage = () => {
+    setShowImageViewer(true);
+  };
 
-      if (error) {
-        throw error;
-      }
-
-      // Create download link
-      const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = illustration.original_filename || `illustration-${illustration.id}`;
-      document.body.appendChild(a);
-      a.click();
-      URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      // Update download count using the database function
-      const { error: updateError } = await supabase.rpc('increment_download_count', { 
-        illustration_id: illustration.id 
-      });
-
-      if (updateError) {
-        console.error('Failed to update download count:', updateError);
-      }
-
-      toast({
-        title: "Success",
-        description: "Download started successfully!",
-      });
-    } catch (error) {
-      console.error('Download error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to download the file.",
-        variant: "destructive",
-      });
-    } finally {
-      setDownloading(false);
-    }
+  const handleDownloadClick = () => {
+    setShowDownloadModal(true);
   };
 
   const getImageUrl = () => {
@@ -227,26 +187,20 @@ const IllustrationDetail = () => {
             {/* Action Buttons */}
             <div className="flex gap-3">
               <Button
-                onClick={handleDownload}
-                disabled={downloading}
+                onClick={handleDownloadClick}
                 className="flex-1 bg-primary hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 transform hover:shadow-lg hover:shadow-primary/25"
               >
                 <Download className="h-4 w-4 mr-2" />
-                {downloading ? 'Downloading...' : 'Download'}
+                Download
               </Button>
               
               <Button
                 variant="outline"
-                onClick={() => {
-                  const fullscreenUrl = imageUrl;
-                  if (fullscreenUrl) {
-                    window.open(fullscreenUrl, '_blank');
-                  }
-                }}
+                onClick={handleViewImage}
                 className="hover:scale-105 active:scale-95 transition-all duration-200 hover:bg-accent hover:text-accent-foreground hover:shadow-lg"
               >
-                <Eye className="h-4 w-4 mr-2" />
-                Full View
+                <ZoomIn className="h-4 w-4 mr-2" />
+                View Large
               </Button>
             </div>
           </div>
@@ -346,6 +300,26 @@ const IllustrationDetail = () => {
             </Card>
           </div>
         </div>
+
+        {/* Image Viewer Modal */}
+        {imageUrl && (
+          <ImageViewer
+            isOpen={showImageViewer}
+            onClose={() => setShowImageViewer(false)}
+            imageUrl={imageUrl}
+            title={illustration.title}
+          />
+        )}
+
+        {/* Download Modal */}
+        {illustration && (
+          <DownloadModal
+            isOpen={showDownloadModal}
+            onClose={() => setShowDownloadModal(false)}
+            illustration={illustration}
+            originalFormat={getOriginalFormat()}
+          />
+        )}
       </div>
     </div>
   );

@@ -254,13 +254,13 @@ const Upload = () => {
             }
 
             const illustration = createData.illustration;
-            console.log('Illustration record created:', illustration.id);
+              console.log('Illustration record created:', illustration.id);
 
-            setProcessingStatus('completed');
-            toast.success('Illustration uploaded successfully! It will be reviewed before being published.');
-            
-            // Reset form after successful completion
-            setTimeout(() => {
+              setProcessingStatus('completed');
+              toast.success('Illustration uploaded and published successfully! It\'s now live on the homepage.');
+              
+              // Reset form after successful completion
+              setTimeout(() => {
               // Clean up preview URL
               if (previewUrl) {
                 URL.revokeObjectURL(previewUrl);
