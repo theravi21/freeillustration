@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Upload as UploadIcon, X, Image, FileText, Check, AlertCircle } from 'lucide-react';
+import { Upload as UploadIcon, X, Image, FileText, Check, AlertCircle, ArrowLeft, Mail, Lock, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Session } from '@supabase/supabase-js';
 
 interface FileValidation {
   isValid: boolean;
@@ -23,6 +25,14 @@ const Upload = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Auth state
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isLogin, setIsLogin] = useState(true);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -30,6 +40,27 @@ const Upload = () => {
   const [processingStatus, setProcessingStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'failed'>('idle');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+      setAuthLoading(false);
+    };
+    
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (newSession) {
+        toast.success('Successfully logged in! You can now upload your illustration.');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Cleanup preview URL on unmount
   useEffect(() => {
     return () => {
@@ -184,13 +215,59 @@ const Upload = () => {
     }
   };
 
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAuthenticating(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: authPassword,
+        });
+
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            toast.error('Invalid email or password');
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email: authEmail,
+          password: authPassword,
+          options: {
+            emailRedirectTo: `${window.location.origin}/upload`,
+          },
+        });
+
+        if (error) {
+          if (error.message.includes('User already registered')) {
+            toast.error('An account with this email already exists');
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
+
+        toast.success('Account created! Please check your email to verify.');
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
   const uploadFile = async (): Promise<void> => {
     if (!file || !fileValidation.isValid) {
       throw new Error('Invalid file');
     }
 
-    // Get session
-    const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       throw new Error('You must be logged in to upload files');
     }
@@ -343,14 +420,115 @@ const Upload = () => {
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Upload Illustration</h1>
-          <p className="text-muted-foreground text-lg">
-            Share your creative work with the community
-          </p>
+        {/* Header with back button */}
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Upload Illustration</h1>
+            <p className="text-muted-foreground text-lg">
+              Share your creative work with the community
+            </p>
+          </div>
+          <Button variant="outline" asChild className="flex-shrink-0">
+            <Link to="/browse" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Browse
+            </Link>
+          </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Auth Gate */}
+        {authLoading ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">Loading...</p>
+            </CardContent>
+          </Card>
+        ) : !session ? (
+          <Card className="mb-8">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">
+                {isLogin ? 'Sign In Required' : 'Create Account'}
+              </CardTitle>
+              <p className="text-muted-foreground">
+                {isLogin 
+                  ? 'Please sign in to upload your illustrations' 
+                  : 'Create an account to start sharing your work'
+                }
+              </p>
+            </CardHeader>
+
+            <CardContent>
+              <form onSubmit={handleAuth} className="space-y-4">
+                <div>
+                  <Label htmlFor="auth-email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="auth-email"
+                      type="email"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      className="pl-10"
+                      required
+                      disabled={isAuthenticating}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="auth-password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="auth-password"
+                      type="password"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="pl-10"
+                      minLength={6}
+                      required
+                      disabled={isAuthenticating}
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isAuthenticating}
+                >
+                  {isAuthenticating ? (
+                    'Loading...'
+                  ) : (
+                    <>
+                      {isLogin ? 'Sign In' : 'Create Account'}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              <Separator className="my-6" />
+
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  {isLogin ? "Don't have an account?" : 'Already have an account?'}
+                </p>
+                <Button
+                  variant="link"
+                  onClick={() => setIsLogin(!isLogin)}
+                  disabled={isAuthenticating}
+                  className="p-0 h-auto font-medium"
+                >
+                  {isLogin ? 'Create one here' : 'Sign in instead'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-8">
           {/* File Upload */}
           <Card>
             <CardHeader>
@@ -605,6 +783,7 @@ const Upload = () => {
             </div>
           )}
         </form>
+        )}
       </div>
     </div>
   );
