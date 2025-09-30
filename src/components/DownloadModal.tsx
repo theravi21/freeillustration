@@ -12,7 +12,8 @@ interface DownloadModalProps {
   illustration: {
     id: string;
     title: string;
-    raw_file_path?: string;
+    raw_file_path?: string; // processed bucket path (if available)
+    file_path?: string; // raw bucket path
     original_filename?: string;
     file_size?: number;
   };
@@ -43,54 +44,79 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
   };
 
   const handleDownload = async (format: 'original' | 'png') => {
-    if (!illustration?.raw_file_path) {
-      toast({
-        title: "Error",
-        description: "File not available for download.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const setLoading = format === 'original' ? setDownloadingOriginal : setDownloadingConverted;
     setLoading(true);
 
     try {
-      let fileData: Blob;
-      let filename: string;
+      let fileData: Blob | null = null;
+      let filename: string = illustration.original_filename || `illustration-${illustration.id}`;
 
-      if (format === 'original') {
-        // Download original file
+      // Helper: fetch a Blob from the private raw bucket via signed URL
+      const fetchFromRaw = async (): Promise<Blob> => {
+        if (!illustration.file_path) throw new Error('File not available for download.');
+        const { data, error } = await supabase.functions.invoke('get-raw-image-url', {
+          body: { file_path: illustration.file_path },
+        });
+        if (error || !data?.url) throw new Error('Could not generate download link.');
+        const res = await fetch(data.url, { cache: 'no-store' });
+        if (!res.ok) throw new Error('Failed to fetch the original file.');
+        return await res.blob();
+      };
+
+      // Helper: download from processed bucket if path is present
+      const fetchFromProcessed = async (): Promise<Blob> => {
+        if (!illustration.raw_file_path) throw new Error('');
         const { data, error } = await supabase.storage
           .from('illustrations-processed')
           .download(illustration.raw_file_path);
-
         if (error) throw error;
-        
-        fileData = data;
-        filename = illustration.original_filename || `illustration-${illustration.id}.${originalFormat}`;
+        return data;
+      };
+
+      if (format === 'original') {
+        // Prefer processed original if available, else signed raw
+        if (illustration.raw_file_path) {
+          fileData = await fetchFromProcessed();
+        } else if (illustration.file_path) {
+          fileData = await fetchFromRaw();
+        } else {
+          throw new Error('File not available for download.');
+        }
+
+        // Determine filename with correct extension
+        if (!illustration.original_filename) {
+          const fallbackExt = (illustration.file_path || '').split('.').pop() || (originalFormat === 'svg' ? 'svg' : 'png');
+          filename = `${filename}.${fallbackExt}`;
+        }
       } else {
-        // Convert SVG to PNG (only available for SVG originals)
+        // Convert SVG to PNG
         if (originalFormat !== 'svg') {
           throw new Error('PNG conversion is only available for SVG files');
         }
+        let svgText: string;
+        if (illustration.raw_file_path) {
+          const svgBlob = await fetchFromProcessed();
+          svgText = await svgBlob.text();
+        } else if (illustration.file_path) {
+          const { data, error } = await supabase.functions.invoke('get-raw-image-url', {
+            body: { file_path: illustration.file_path },
+          });
+          if (error || !data?.url) throw new Error('Could not generate download link.');
+          const res = await fetch(data.url, { cache: 'no-store' });
+          if (!res.ok) throw new Error('Failed to fetch the original file.');
+          svgText = await res.text();
+        } else {
+          throw new Error('File not available for download.');
+        }
 
-        // Get the SVG file first
-        const { data: svgData, error: svgError } = await supabase.storage
-          .from('illustrations-processed')
-          .download(illustration.raw_file_path);
-
-        if (svgError) throw svgError;
-
-        // Convert SVG to PNG using canvas
-        const svgText = await svgData.text();
         const pngBlob = await convertSvgToPng(svgText);
-        
         fileData = pngBlob;
-        filename = illustration.original_filename?.replace('.svg', '.png') || `illustration-${illustration.id}.png`;
+        filename = (illustration.original_filename?.replace(/\.svg$/i, '.png')) || `${filename}.png`;
       }
 
-      // Create download link
+      if (!fileData) throw new Error('Failed to prepare the download.');
+
+      // Trigger browser download
       const url = URL.createObjectURL(fileData);
       const a = document.createElement('a');
       a.href = url;
@@ -100,27 +126,20 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
       URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      // Update download count
-      const { error: updateError } = await supabase.rpc('increment_download_count', { 
-        illustration_id: illustration.id 
+      // Update download count (best-effort)
+      const { error: updateError } = await supabase.rpc('increment_download_count', {
+        illustration_id: illustration.id,
       });
+      if (updateError) console.error('Failed to update download count:', updateError);
 
-      if (updateError) {
-        console.error('Failed to update download count:', updateError);
-      }
-
-      toast({
-        title: "Success",
-        description: `Downloaded ${format === 'original' ? 'original' : 'PNG'} file successfully!`,
-      });
-
+      toast({ title: 'Success', description: `Downloaded ${format === 'original' ? 'original' : 'PNG'} file successfully!` });
       onClose();
     } catch (error) {
       console.error('Download error:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to download the file.",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to download the file.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
