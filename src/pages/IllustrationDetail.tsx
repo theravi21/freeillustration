@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Download, Eye, Calendar, Tag, ZoomIn } from 'lucide-react';
+import { ArrowLeft, Download, Eye, Calendar, Tag, ZoomIn, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import ImageViewer from '@/components/ImageViewer';
@@ -217,13 +217,21 @@ const getImageUrl = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        {/* Back Button */}
-        <Button variant="ghost" asChild className="mb-6 hover:scale-105 transition-transform duration-200">
-          <Link to="/browse" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Browse
-          </Link>
-        </Button>
+        {/* Navigation */}
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Button variant="ghost" asChild className="hover:scale-105 transition-transform duration-200">
+            <Link to="/browse" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Browse
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="hover:scale-105 transition-transform duration-200">
+            <Link to="/upload" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Upload Yours
+            </Link>
+          </Button>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Image Section */}

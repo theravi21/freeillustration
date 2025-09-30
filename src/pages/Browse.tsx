@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, Grid, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Download, Grid, Filter, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import SearchSuggestions from '../components/SearchSuggestions';
 import IllustrationGrid from '../components/IllustrationGrid';
@@ -121,11 +121,19 @@ const Browse = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">Browse Free Illustrations</h1>
-          <p className="text-muted-foreground text-lg">
-            Discover thousands of high-quality illustrations for your projects
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold mb-4">Browse Free Illustrations</h1>
+            <p className="text-muted-foreground text-lg">
+              Discover thousands of high-quality illustrations for your projects
+            </p>
+          </div>
+          <Button asChild size="lg" className="flex-shrink-0">
+            <Link to="/upload" className="gap-2">
+              <Upload className="h-5 w-5" />
+              Upload Yours
+            </Link>
+          </Button>
         </div>
 
         {/* Search and Filters */}
