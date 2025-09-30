@@ -20,11 +20,20 @@ interface Illustration {
   dominant_color?: string;
   download_count: number;
   created_at: string;
+  updated_at?: string;
   raw_file_path?: string;
   original_filename?: string;
   dimensions_width?: number;
   dimensions_height?: number;
   file_size?: number;
+  // Processed/public variants
+  thumbnail_path?: string;
+  png_small_path?: string;
+  png_medium_path?: string;
+  png_large_path?: string;
+  svg_path?: string;
+  // Original location in raw bucket
+  file_path?: string;
 }
 
 const IllustrationDetail = () => {
@@ -33,6 +42,7 @@ const IllustrationDetail = () => {
   const [loading, setLoading] = useState(true);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [rawUrl, setRawUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -79,7 +89,40 @@ const IllustrationDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+};
+
+  // Fetch a short-lived signed URL from the private raw bucket when no processed image exists
+  useEffect(() => {
+    if (!illustration) return;
+
+    const hasProcessed = Boolean(
+      illustration.thumbnail_path ||
+      illustration.png_medium_path ||
+      illustration.png_small_path ||
+      illustration.png_large_path ||
+      illustration.svg_path
+    );
+
+    if (hasProcessed) {
+      setRawUrl(null);
+      return;
+    }
+
+    if (illustration.file_path) {
+      (async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('get-raw-image-url', {
+            body: { file_path: illustration.file_path },
+          });
+          if (!error && data?.url) {
+            setRawUrl(data.url as string);
+          }
+        } catch (e) {
+          console.warn('Failed to fetch raw signed URL', e);
+        }
+      })();
+    }
+  }, [illustration]);
 
   const getOriginalFormat = (): 'svg' | 'png' => {
     if (!illustration?.original_filename) return 'png';
@@ -94,14 +137,33 @@ const IllustrationDetail = () => {
     setShowDownloadModal(true);
   };
 
-  const getImageUrl = () => {
-    if (!illustration?.raw_file_path) return null;
-    
-    const { data } = supabase.storage
-      .from('illustrations-processed')
-      .getPublicUrl(illustration.raw_file_path);
-    
-    return data.publicUrl;
+const getImageUrl = () => {
+    if (!illustration) return null;
+
+    let url: string | null = null;
+    const processedPath =
+      illustration.thumbnail_path ||
+      illustration.png_medium_path ||
+      illustration.png_small_path ||
+      illustration.png_large_path ||
+      illustration.svg_path ||
+      null;
+
+    if (processedPath) {
+      const { data } = supabase.storage
+        .from('illustrations-processed')
+        .getPublicUrl(processedPath);
+      url = data.publicUrl;
+    } else if (rawUrl) {
+      url = rawUrl;
+    }
+
+    if (url && illustration.updated_at) {
+      const sep = url.includes('?') ? '&' : '?';
+      url = `${url}${sep}v=${new Date(illustration.updated_at).getTime()}`;
+    }
+
+    return url;
   };
 
   const formatFileSize = (bytes?: number) => {
