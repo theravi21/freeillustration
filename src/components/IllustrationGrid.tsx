@@ -109,17 +109,17 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
       {illustrations.map((illustration) => (
         <Link
           key={illustration.id}
           to={`/illustration/${illustration.id}`}
           className="group block"
         >
-          <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+          <Card className="overflow-hidden hover:shadow-elegant transition-all duration-300 hover:scale-[1.03] hover:border-primary/20">
             <div className="relative aspect-square">
               {/* Illustration Image */}
-              <div className="w-full h-full bg-muted rounded-t-lg flex items-center justify-center">
+              <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 rounded-t-lg flex items-center justify-center">
                 {(() => {
                   // Create the image URL from file_path using Supabase storage
                   let imageUrl = null;
@@ -168,58 +168,58 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
               </div>
 
               {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
                 <Button
                   asChild
                   variant="secondary"
                   size="sm"
-                  className="bg-background/90 hover:bg-background text-foreground gap-1 hover:scale-110 active:scale-95 transition-all duration-200 transform hover:shadow-lg"
+                  className="bg-white/95 hover:bg-white text-foreground gap-1.5 hover:scale-110 active:scale-95 transition-all duration-200 shadow-lg"
                 >
                   <Link to={`/illustration/${illustration.id}`}>
-                    <Eye className="h-3 w-3" />
+                    <Eye className="h-3.5 w-3.5" />
                     View
                   </Link>
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="default"
                   size="sm"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1 hover:scale-110 active:scale-95 transition-all duration-200 transform hover:shadow-lg hover:shadow-primary/25"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 hover:scale-110 active:scale-95 transition-all duration-200 shadow-glow"
                   onClick={(e) => handleDownload(illustration, e)}
                 >
-                  <Download className="h-3 w-3" />
+                  <Download className="h-3.5 w-3.5" />
                   Download
                 </Button>
               </div>
 
               {/* Download Count Badge */}
               {illustration.download_count > 0 && (
-                <div className="absolute top-2 right-2 bg-background/90 text-foreground px-2 py-1 rounded-full text-xs font-medium">
+                <div className="absolute top-3 right-3 bg-background/95 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-full text-xs font-semibold shadow-md border border-border">
                   {formatDownloadCount(illustration.download_count)} downloads
                 </div>
               )}
             </div>
 
-            <CardContent className="p-3">
-              <h3 className="font-medium text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-sm mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                 {illustration.title}
               </h3>
               
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                <span>{illustration.orientation}</span>
+                <span className="capitalize">{illustration.orientation}</span>
                 {illustration.topic && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0">
+                  <Badge variant="secondary" className="text-xs">
                     {illustration.topic}
                   </Badge>
                 )}
               </div>
 
               {illustration.tags && illustration.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {illustration.tags.slice(0, 2).map((tag, index) => (
                     <Badge
                       key={index}
                       variant="outline"
-                      className="text-xs px-1 py-0 h-5"
+                      className="text-xs"
                     >
                       {tag}
                     </Badge>
@@ -227,7 +227,7 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
                   {illustration.tags.length > 2 && (
                     <Badge
                       variant="outline"
-                      className="text-xs px-1 py-0 h-5 text-muted-foreground"
+                      className="text-xs text-muted-foreground"
                     >
                       +{illustration.tags.length - 2}
                     </Badge>

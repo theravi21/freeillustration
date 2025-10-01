@@ -118,17 +118,19 @@ const Browse = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-subtle">
+      <div className="container mx-auto px-4 py-10">
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold mb-4">Browse Free Illustrations</h1>
-            <p className="text-muted-foreground text-lg">
-              Discover thousands of high-quality illustrations for your projects
+        <div className="mb-10 flex flex-col md:flex-row items-start justify-between gap-6 animate-fade-in">
+          <div className="space-y-2">
+            <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-primary bg-clip-text text-transparent">
+              Browse Gallery
+            </h1>
+            <p className="text-muted-foreground text-base md:text-lg max-w-2xl">
+              Explore thousands of stunning illustrations from our creative community
             </p>
           </div>
-          <Button asChild size="lg" className="flex-shrink-0">
+          <Button asChild size="lg" variant="premium" className="flex-shrink-0">
             <Link to="/upload" className="gap-2">
               <Upload className="h-5 w-5" />
               Upload Yours
@@ -137,19 +139,19 @@ const Browse = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
+        <div className="mb-10 space-y-6 animate-fade-up">
           {/* Search Bar */}
           <div className="relative">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
                 type="text"
-                placeholder="Search illustrations..."
+                placeholder="Search illustrations by keyword..."
                 value={currentQuery}
                 onChange={(e) => updateURL({ q: e.target.value })}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className="pl-10 h-12 text-base"
+                className="pl-12 h-14 text-base shadow-card border-2 focus-visible:ring-primary/20"
               />
             </div>
             
@@ -172,8 +174,8 @@ const Browse = () => {
 
           {/* Active Filters */}
           {(currentQuery || currentTopic || currentOrientation || currentStyle || currentColor) && (
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm text-muted-foreground">Active filters:</span>
+            <div className="flex flex-wrap gap-2 items-center p-4 bg-card rounded-lg shadow-card">
+              <span className="text-sm font-semibold text-muted-foreground">Active filters:</span>
               {currentQuery && (
                 <Badge variant="secondary" className="gap-1">
                   Search: {currentQuery}
@@ -242,22 +244,29 @@ const Browse = () => {
         </div>
 
         {/* Results Count */}
-        <div className="mb-6 flex items-center justify-between">
-          <p className="text-muted-foreground">
-            {loading ? 'Loading...' : `${totalCount} illustration${totalCount !== 1 ? 's' : ''} found`}
+        <div className="mb-8 flex items-center justify-between">
+          <p className="text-base font-medium">
+            {loading ? (
+              <span className="text-muted-foreground">Loading...</span>
+            ) : (
+              <>
+                <span className="text-foreground font-bold">{totalCount.toLocaleString()}</span>
+                <span className="text-muted-foreground"> illustration{totalCount !== 1 ? 's' : ''} found</span>
+              </>
+            )}
           </p>
-          <div className="flex items-center gap-2">
-            <Grid className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Grid view</span>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Grid className="h-4 w-4" />
+            <span className="text-sm">Grid view</span>
           </div>
         </div>
 
         {/* Content */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
             {Array.from({ length: 24 }).map((_, i) => (
-              <Card key={i} className="aspect-square">
-                <CardContent className="p-0 h-full bg-muted rounded-lg animate-pulse" />
+              <Card key={i} className="aspect-square overflow-hidden">
+                <CardContent className="p-0 h-full bg-gradient-to-br from-muted to-muted/50 animate-pulse" />
               </Card>
             ))}
           </div>
@@ -267,13 +276,13 @@ const Browse = () => {
             
             {/* Pagination */}
             {showPagination && (
-              <div className="mt-12 flex items-center justify-center gap-2">
+              <div className="mt-16 flex items-center justify-center gap-3">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="default"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="gap-1"
+                  className="gap-2"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   Previous
