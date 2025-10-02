@@ -190,13 +190,6 @@ const IllustrationGrid: React.FC<IllustrationGridProps> = ({ illustrations }) =>
                   Download
                 </Button>
               </div>
-
-              {/* Download Count Badge */}
-              {illustration.download_count > 0 && (
-                <div className="absolute top-3 right-3 bg-background/95 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-full text-xs font-semibold shadow-md border border-border">
-                  {formatDownloadCount(illustration.download_count)} downloads
-                </div>
-              )}
             </div>
 
             <CardContent className="p-4">
